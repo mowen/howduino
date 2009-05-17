@@ -5,18 +5,18 @@ module Howduino
   Tweet = Struct.new(:time, :id)
 
   class TwitterTimeline
-    def generate_timeline
+    def generate_timeline(id)
       timeline = []
       @result.results.each do |r|
         time = Time.parse(r.created_at)
         seconds = time.tv_sec - @timeline_start
-        timeline << Tweet.new(seconds, @search_text)
+        timeline << Tweet.new(seconds, id)
       end
       timeline
     end
   end
 
-  class TwitterSearchTimeline < TwitterTimeline    
+  class TwitterSearchTimeline < TwitterTimeline
     RESULTS_PER_PAGE = 100
     
     def initialize(search_text, timeline_start)
@@ -49,7 +49,6 @@ module Howduino
     end
 
     def save(filename)
-      filename ||= @ids.join("_").gsub(" ", "_") + ".txt"
       File.open(filename, "w") do |f|
         @timeline.each do |tweet|
           f.puts("#{tweet.time} #{tweet.id}")
@@ -60,19 +59,24 @@ module Howduino
 
   class TwitterSearchRace < TwitterRace
     def initialize(search_texts)
-      @ids = search_texts
       @timeline = []
-      search_texts.each do |text|
+      search_texts.each_with_index do |text, i|
         search_timeline = TwitterSearchTimeline.new(text, TIMELINE_START)
-        @timeline += search_timeline.generate_timeline
+        @timeline += search_timeline.generate_timeline(i)
       end
       normalize_timeline
     end
   end
 
+  def search_race(search_texts, filename)
+    search_race = TwitterSearchRace.new(search_texts)
+    search_race.save(filename)
+  end
+  module_function :search_race
+  
 end
 
 if __FILE__ == $0
-  search_race = Howduino::TwitterSearchRace.new(["Angels & Demons", "Star Trek"])
-  search_race.save(File.join("timelines", "angels_vs_startrek.txt"))
+  Howduino::search_race(["Angels & Demons", "Star Trek"],
+                        File.join("timelines", "angels_vs_startrek.txt"))
 end
