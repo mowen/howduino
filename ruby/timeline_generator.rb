@@ -34,9 +34,17 @@ module Howduino
   class TwitterRace
     TIMELINE_START = Time.parse("2009/05/15 00:00:00").tv_sec
 
+    def normalize_timeline
+      sort_timeline
+      earliest_tweet_time = @timeline.first.time
+      @timeline.map! do |tweet|
+        Tweet.new(tweet.time - earliest_tweet_time, tweet.id)
+      end
+    end
+
     def sort_timeline
       @timeline.sort! do |a, b|
-        a.time <=> b.time 
+        a.time <=> b.time
       end
     end
 
@@ -58,7 +66,7 @@ module Howduino
         search_timeline = TwitterSearchTimeline.new(text, TIMELINE_START)
         @timeline += search_timeline.generate_timeline
       end
-      sort_timeline
+      normalize_timeline
     end
   end
 
