@@ -1,3 +1,4 @@
+require "rubygems"
 require "twitter"
 
 module Howduino
@@ -63,6 +64,9 @@ module Howduino
     end
 
     def save(filename)
+      sort_timeline
+      equalize_timeline
+      normalize_timeline
       File.open(filename, "w") do |f|
         @timeline.each do |tweet|
           f.puts("#{tweet.time} #{tweet.id}")
@@ -80,9 +84,6 @@ module Howduino
         @timeline += search_timeline.generate_timeline(i)
         @ids << i
       end
-      sort_timeline
-      equalize_timeline
-      normalize_timeline
     end
   end
 
