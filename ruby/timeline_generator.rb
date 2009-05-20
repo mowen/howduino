@@ -3,12 +3,15 @@ require "twitter"
 
 module Howduino
 
+  USERNAME = File.open("secret", "r"){ |f| f.readlines[0].chop }
+  PASSWORD = File.open("secret", "r"){ |f| f.readlines[1].chop }
+
   Tweet = Struct.new(:time, :id)
 
   class TwitterTimeline
     def generate_timeline(id)
       timeline = []
-      @result.results.each do |r|
+      @result.each do |r|
         time = Time.parse(r.created_at)
         seconds = time.tv_sec - @timeline_start
         timeline << Tweet.new(seconds, id)
@@ -19,16 +22,34 @@ module Howduino
 
   class TwitterSearchTimeline < TwitterTimeline
     RESULTS_PER_PAGE = 100
+    PAGES = 5
     
     def initialize(search_text, timeline_start)
       @search_text, @timeline_start = search_text, timeline_start
-      @result = query_twitter(@search_text)
+      @result = []
+      (1..PAGES).each do |page|
+        @result += query_twitter(@search_text, page).results
+      end
     end
 
-    def query_twitter(search_text)
+    def query_twitter(search_text, page)
       @query = Twitter::Search.new(search_text)
       @query.per_page(RESULTS_PER_PAGE)
+      @query.page(page)
       @query.fetch
+    end
+  end
+
+  class TwitterUserTimeline < TwitterTimeline
+    def initialize(user, timeline_start)
+      @user, @timeline_start = user, timeline_start
+      @result = query_twitter(@user)
+    end
+
+    def query_twitter(user)
+      httpauth = Twitter::HTTPAuth.new(USERNAME, PASSWORD)
+      base = Twitter::Base.new(httpauth)
+      base.user_timeline(user)
     end
   end
 
@@ -53,21 +74,37 @@ module Howduino
     # The first id will have a head start as it was queried earlier,
     # therefore we delete all Tweets before the first appearance of the
     # last id. (I also think I'll have to delete Tweets from the end of
-    # the timeline so that each ID has an equal number, hence deleted_id_count.)
+    # the timeline so that each ID has an equal number, hence deleted_tweets.)
     def equalize_timeline
+      new_starting_time = 0
+      total_initial_tweets = @timeline.length
       last_id = @ids.last
-      deleted_id_count = Hash.new
-      until (id = @timeline.shift.id) == last_id
-        deleted_id_count[id] ||= 0
-        deleted_id_count[id] += 1
+      deleted_tweets = Hash.new
+      @timeline.reverse.each do |tweet|
+        if (tweet.id == last_id)
+          new_starting_time = tweet.time
+        else
+          deleted_tweets[tweet.id] ||= 0
+          deleted_tweets[tweet.id] += 1
+        end
       end
+      @timeline.delete_if{|tweet| tweet.time < new_starting_time }
+#       puts "Initial Tweets: ", total_initial_tweets
+#       puts "Deleted Tweets: ", deleted_tweets[0]
+#       puts "Eventual Tweets: ", @timeline.length
     end
 
     def save(filename)
       sort_timeline
       equalize_timeline
       normalize_timeline
+
+      metadata = []
+      metadata << Time.now.to_s
+      @racers.each_with_index{|racer, i| metadata << "#{i}:#{racer}"}
+
       File.open(filename, "w") do |f|
+        f.puts(metadata.join(","))
         @timeline.each do |tweet|
           f.puts("#{tweet.time} #{tweet.id}")
         end
@@ -77,6 +114,7 @@ module Howduino
 
   class TwitterSearchRace < TwitterRace
     def initialize(search_texts)
+      @racers = search_texts
       @ids = []
       @timeline = []
       search_texts.each_with_index do |text, i|
@@ -87,15 +125,34 @@ module Howduino
     end
   end
 
+  class TwitterUserRace < TwitterRace
+    def initialize(users)
+      @racers = users
+      @ids = []
+      @timeline = []
+      users.each_with_index do |text, i|
+        user_timeline = TwitterUserTimeline.new(text, TIMELINE_START)
+        @timeline += user_timeline.generate_timeline(i)
+        @ids << i
+      end
+    end
+  end
+
   def search_race(search_texts, filename)
     search_race = TwitterSearchRace.new(search_texts)
     search_race.save(filename)
   end
   module_function :search_race
+
+  def user_race(users, filename)
+    user_race = TwitterUserRace.new(users)
+    user_race.save(filename)
+  end
+  module_function :user_race
   
 end
 
 if __FILE__ == $0
-  Howduino::search_race(["Angels & Demons", "Star Trek"],
-                        File.join("timelines", "angels_vs_startrek.txt"))
+  Howduino::search_race(["apple", "microsoft"],
+                        File.join("timelines", "apple_vs_microsoft.txt"))
 end
