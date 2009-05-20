@@ -2,16 +2,13 @@
   Processing prototype for Twitter Race cars.
   */
 
-import processing.serial.*;
-
-int linefeed = 10; // Linefeed in ASCII
-Serial myPort;
-
 float carAPosition;
 color carAColor = color(255, 0, 0);
+String carAName;
 
 float carBPosition;
 color carBColor = color(0, 0, 255);
+String carBName;
 
 float carIncrement = 2;
 
@@ -19,12 +16,12 @@ color white = color(255, 255, 255);
 
 PFont fontA;
 
-int windowHeight = 160;
-int windowWidth = 320;
+int windowHeight = 320;
+int windowWidth = 800;
 
 int step = 0;
 String[] times;
-int time = 0;
+int time = 1;
 
 void setup() {
   size(windowWidth, windowHeight);
@@ -36,11 +33,11 @@ void setup() {
   carAPosition = 10.0;
   carBPosition = 10.0;
   
-  times = loadStrings("../../timelines/swayze_vs_americanidol.txt");
-  
-//  println(Serial.list());
-//  myPort = new Serial(this, Serial.list()[0], 9600);
-//  myPort.bufferUntil(linefeed);
+  times = loadStrings("../../timelines/apple_vs_microsoft.txt");
+
+  String[] metadata = split(times[0], ",");
+  carAName = split(metadata[1], ":")[1];
+  carBName = split(metadata[2], ":")[1];
 }
 
 void drawStartAndFinishLine() {
@@ -53,21 +50,21 @@ void drawStartAndFinishLine() {
 //void drawCarLine(int baseHeight, color cl) { }
 
 void drawCarA() {
- int lineHeight = 50;
+ int lineHeight = 100;
  stroke(0, 0, 255);
- strokeWeight(25);
+ strokeWeight(50);
  line(10, lineHeight, carAPosition, lineHeight);
  fill(255, 255, 255);
- text("A", carAPosition - 15.0, lineHeight + 12.0);
+ text(carAName, carAPosition - 15.0, lineHeight + 12.0);
 }
 
 void drawCarB() {
-  int lineHeight = 100;
+  int lineHeight = 200;
   stroke(255, 0, 0);
-  strokeWeight(25);
+  strokeWeight(50);
   line(10, lineHeight, carBPosition, lineHeight);
   fill(255, 255, 255);
-  text("B", carBPosition - 15.0, lineHeight + 12.0);
+  text(carBName, carBPosition - 15.0, lineHeight + 12.0);
 }
 
 void updateCars() {
@@ -95,12 +92,3 @@ void draw() {
 
   step++;
 }
-
-//void serialEvent(Serial myPort) {
-//   String s = myPort.readStringUntil(linefeed);
-//
-//  if (s != null)
-//    s = trim(s);
-//    
-//    
-//}
