@@ -2,6 +2,8 @@
   Processing prototype for Twitter Race cars.
   */
 
+String raceTime;
+
 float carAPosition;
 color carAColor = color(255, 0, 0);
 String carAName;
@@ -33,9 +35,14 @@ void setup() {
   carAPosition = 10.0;
   carBPosition = 10.0;
   
-  times = loadStrings("../../timelines/apple_vs_microsoft.txt");
-
+  String timelineFile = selectInput();  // Opens file chooser
+  if (timelineFile == null)
+    println("No timeline was selected...");
+  else
+    times = loadStrings(timelineFile);
+  
   String[] metadata = split(times[0], ",");
+  raceTime = metadata[0];
   carAName = split(metadata[1], ":")[1];
   carBName = split(metadata[2], ":")[1];
 }
@@ -83,6 +90,8 @@ void updateCars() {
 void draw() {
   background(0);
   drawStartAndFinishLine();
+  fill(255, 255, 255);
+  text(raceTime, 15, 40);
 
   if (time < times.length - 1)
     updateCars();
