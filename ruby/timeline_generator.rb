@@ -138,21 +138,28 @@ module Howduino
     end
   end
 
-  def search_race(search_texts, filename)
+  def search_race(search_texts, filename=nil)
     search_race = TwitterSearchRace.new(search_texts)
+    filename ||= generate_filename(search_texts)
     search_race.save(filename)
   end
-  module_function :search_race
 
-  def user_race(users, filename)
+  def user_race(users, filename=nil)
     user_race = TwitterUserRace.new(users)
+    filename ||= generate_filename(users)
     user_race.save(filename)
   end
-  module_function :user_race
+
+  def generate_filename(terms)
+    timestamp = Time.now.strftime("%Y%m%d%H%M")
+    filename = terms.join("_vs_").gsub(" ", "_") + "_" + timestamp + ".txt"
+    File.join("timelines", filename)
+  end
+
+  module_function :search_race, :user_race, :generate_filename
   
 end
 
 if __FILE__ == $0
-  Howduino::search_race(["apple", "microsoft"],
-                        File.join("timelines", "apple_vs_microsoft.txt"))
+  Howduino::search_race(ARGV[0..1])
 end
