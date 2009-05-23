@@ -94,11 +94,13 @@ module Howduino
 #       puts "Eventual Tweets: ", @timeline.length
     end
 
-    def save(filename)
+    def normalize
       sort_timeline
       equalize_timeline
       normalize_timeline
+    end
 
+    def save_for_processing(filename)
       metadata = []
       metadata << Time.now.to_s
       @racers.each_with_index{|racer, i| metadata << "#{i}:#{racer}"}
@@ -110,6 +112,27 @@ module Howduino
         end
       end
     end
+
+    def save_for_arduino(filename)
+      current_tweet = 0
+      null_char = "9"
+
+      last_second = @timeline.last.time
+      File.open(filename, "w") do |f|
+        (0..last_second).each do |second|
+          if (@timeline[current_tweet].time == second)
+            while (current_tweet < @timeline.length &&
+                   @timeline[current_tweet].time == second)
+              f.puts @timeline[current_tweet].id
+              current_tweet += 1
+            end
+          else
+            f.puts null_char
+          end
+        end
+      end
+    end
+
   end
 
   class TwitterSearchRace < TwitterRace
@@ -141,18 +164,22 @@ module Howduino
   def search_race(search_texts, filename=nil)
     search_race = TwitterSearchRace.new(search_texts)
     filename ||= generate_filename(search_texts)
-    search_race.save(filename)
+    search_race.normalize
+    search_race.save_for_processing(filename + ".pro")
+    search_race.save_for_arduino(filename + ".ard")
   end
 
   def user_race(users, filename=nil)
     user_race = TwitterUserRace.new(users)
     filename ||= generate_filename(users)
-    user_race.save(filename)
+    user_race.normalize
+    user_race.save_for_processing(filename + ".pro")
+    user_race.save_for_arduino(filename + ".ard")
   end
 
   def generate_filename(terms)
     timestamp = Time.now.strftime("%Y%m%d%H%M")
-    filename = terms.join("_vs_").gsub(" ", "_") + "_" + timestamp + ".txt"
+    filename = terms.join("_vs_").gsub(" ", "_") + "_" + timestamp
     File.join("timelines", filename)
   end
 
