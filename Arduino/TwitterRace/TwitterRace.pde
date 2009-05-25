@@ -2,15 +2,21 @@
  * TwitterRace
  * 
  * Note that HIGH and LOW are reversed for the car pins.
+ *
+ * TODO: Introduce a handicap on each car to account for differences in the speed of each car
  */
 
 int redPin = 2;
 int bluePin = 3;
-int sliderPin = 1;
 
 int redCar = 0;
 int blueCar = 1;
 int noCar = 9;
+
+int redCount = 0;
+int blueCount = 0;
+
+int lineFeed = 10;
 
 void setup()
 {
@@ -21,28 +27,67 @@ void setup()
   digitalWrite(bluePin, HIGH);
 }
 
-void handleByte(int inputByte) {
-  int rate = 500; //analogRead(sliderPin);
-  //Serial.println(rate);
-  
-  int inputCar = inputByte - 48; // 0 = 48, 1 = 49
-  int pinOffset = 2; // inputCar + pinOffset should give pin number
-  
-  if (inputCar == redCar || inputCar == blueCar) {
-    digitalWrite(inputCar + pinOffset, LOW);
-    delay(50);               
-    digitalWrite(inputCar + pinOffset, HIGH);
-    delay(rate);
+void moveCars() {
+  int offTime = 25;
+  int onTimeCoeff = 20;
+
+  if (redCount > 0)
+    digitalWrite(redPin, LOW);
+
+  if (blueCount > 0)
+    digitalWrite(bluePin, LOW);
+    
+  if (redCount == blueCount && redCount != 0) {
+    delay(onTimeCoeff*redCount);
+    digitalWrite(redPin, HIGH);
+    digitalWrite(bluePin, HIGH);
   }
+  else if (redCount < blueCount) {
+    delay(onTimeCoeff*redCount);              
+    digitalWrite(redPin, HIGH);
+    delay(onTimeCoeff*(blueCount-redCount));
+    digitalWrite(bluePin, HIGH);
+  }
+  else { // Must be blueCount < redCount
+    delay(onTimeCoeff*blueCount);              
+    digitalWrite(bluePin, HIGH);
+    delay(onTimeCoeff*(redCount-blueCount));
+    digitalWrite(redPin, HIGH);
+  }
+  
+  delay(offTime);
+}
+
+void readLine() {
+  int incomingByte;
+  while (incomingByte = Serial.read()) {
+    //debugByte(incomingByte);
+    if (incomingByte == lineFeed)
+      break;
+    else {
+      incomingByte -= 48;
+      if (incomingByte == redCar)
+        redCount++;
+      else if (incomingByte == blueCar)
+        blueCount++;
+    }
+  }
+}
+
+void debugByte(int incomingByte) {
+  if (incomingByte == lineFeed)
+    Serial.print("\n");
+  else
+    Serial.print(incomingByte);
 }
 
 void loop()
 {
+  redCount = 0;
+  blueCount = 0;
   if (Serial.available() > 0) {
-    int incomingByte = Serial.read();
-    handleByte(incomingByte);
-    Serial.println(incomingByte, DEC);
-    Serial.read(); // Read the newline
+    readLine();
+    moveCars();
   }
   else {
     digitalWrite(redPin, HIGH);

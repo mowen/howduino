@@ -7,6 +7,10 @@ filename = ARGV[0]
 f = File.open(filename)
 lines = f.readlines
 
-lines.each do |num|
-  sp.write num
+lines.each do |line|
+  line.split(" ").each do |num|
+    sp.write num
+  end
+  sp.write "\n"
+  sleep 0.05
 end

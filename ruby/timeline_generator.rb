@@ -67,7 +67,11 @@ module Howduino
     # Sort times in ascending order
     def sort_timeline
       @timeline.sort! do |a, b|
-        a.time <=> b.time
+        if (a.time == b.time)
+          a.id <=> b.id
+        else
+          a.time <=> b.time
+        end
       end
     end
 
@@ -121,11 +125,13 @@ module Howduino
       File.open(filename, "w") do |f|
         (0..last_second).each do |second|
           if (@timeline[current_tweet].time == second)
+            ids = []
             while (current_tweet < @timeline.length &&
                    @timeline[current_tweet].time == second)
-              f.puts @timeline[current_tweet].id
+              ids << @timeline[current_tweet].id
               current_tweet += 1
             end
+            f.puts ids.join(" ")
           else
             f.puts null_char
           end
