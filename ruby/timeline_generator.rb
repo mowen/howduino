@@ -6,7 +6,7 @@ module Howduino
   USERNAME = File.open("secret", "r"){ |f| f.readlines[0].chop }
   PASSWORD = File.open("secret", "r"){ |f| f.readlines[1].chop }
 
-  Tweet = Struct.new(:time, :id)
+  Tweet = Struct.new(:time, :id, :text)
 
   class TwitterTimeline
     def generate_timeline(id)
@@ -14,7 +14,7 @@ module Howduino
       @result.each do |r|
         time = Time.parse(r.created_at)
         seconds = time.tv_sec - @timeline_start
-        timeline << Tweet.new(seconds, id)
+        timeline << Tweet.new(seconds, id, r.text)
       end
       timeline
     end
@@ -60,7 +60,7 @@ module Howduino
     def normalize_timeline
       earliest_tweet_time = @timeline.first.time
       @timeline.map! do |tweet|
-        Tweet.new(tweet.time - earliest_tweet_time, tweet.id)
+        Tweet.new(tweet.time - earliest_tweet_time, tweet.id, tweet.text)
       end
     end
 
@@ -112,7 +112,8 @@ module Howduino
       File.open(filename, "w") do |f|
         f.puts(metadata.join(","))
         @timeline.each do |tweet|
-          f.puts("#{tweet.time} #{tweet.id}")
+          text = tweet.text.gsub("\n", " ")
+          f.puts("#{tweet.time}@@@#{tweet.id}@@@#{text}")
         end
       end
     end

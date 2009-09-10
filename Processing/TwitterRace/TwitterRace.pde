@@ -4,13 +4,17 @@
 
 String raceTime;
 
+String carAChar = "0";
 float carAPosition;
 color carAColor = color(255, 0, 0);
 String carAName;
+String[] carATweets;
 
+String carBChar = "1";
 float carBPosition;
 color carBColor = color(0, 0, 255);
 String carBName;
+String[] carBTweets;
 
 float carIncrement = 2;
 
@@ -34,6 +38,9 @@ void setup() {
   
   carAPosition = 10.0;
   carBPosition = 10.0;
+  
+  carATweets = new String[5];
+  carBTweets = new String[5];
   
   String timelineFile = selectInput();  // Opens file chooser
   if (timelineFile == null)
@@ -76,15 +83,54 @@ void drawCarB() {
 
 void updateCars() {
   String stepChar = Integer.toString(step);  
-  while (split(times[time], ' ')[0].equals(stepChar)) {
-    if (split(times[time], ' ')[1].equals("0"))
+  while (split(times[time], "@@@")[0].equals(stepChar)) {
+    String car = split(times[time], "@@@")[1];
+    String tweet = split(times[time], "@@@")[2];
+    if (car.equals(carAChar)) {
+      addTweet(car, tweet);
       carAPosition += carIncrement;
-    else if (split(times[time], ' ')[1].equals("1"))
+    }
+    else if (car.equals(carBChar)) {
+      addTweet(car, tweet);
       carBPosition += carIncrement;
+    }
     time++;
-    if (time == times.length - 1)
-      break; 
+    if (time == times.length - 1) {
+      break;
+    }
   }
+}
+
+void drawTweets() {
+  textFont(fontA, 12);
+
+  int i;
+
+  for(i=0; i < carATweets.length; i++) {
+    //System.out.println(carATweets[i]);
+    text(carATweets[i], 10, 100 - (i * 10));
+  }
+  
+  for(i=0; i < carBTweets.length; i++) {
+    //System.out.println(carBTweets[i]);
+    text(carBTweets[i], 10, 200 + (i * 10));
+  }
+}
+
+void addTweet(String car, String tweet) {
+  if (car.equals(carAChar)) {
+    pushTweet(carATweets, tweet);
+  }
+  else if (car.equals(carBChar)) {
+    pushTweet(carBTweets, tweet);
+  }
+}
+
+void pushTweet(String[] tweets, String tweet) {
+  for (int i=1; i < tweets.length; i++) {
+    tweets[i] = tweets[i-1];
+  }
+  tweets[0] = tweet;
 }
 
 void draw() {
@@ -98,6 +144,7 @@ void draw() {
 
   drawCarA();
   drawCarB();
+  drawTweets();
 
   step++;
 }
